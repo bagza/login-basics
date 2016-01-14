@@ -40,6 +40,7 @@ import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
 import com.facebook.login.LoginResult;
 import com.facebook.login.widget.LoginButton;
+import com.github.pwittchen.prefser.library.Prefser;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.Scopes;
 import com.google.android.gms.common.SignInButton;
@@ -67,18 +68,18 @@ public class LoginActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener, LoaderManager.LoaderCallbacks<Cursor> {
 
+
+    //THIS IS KINDA DATA CENTER - emulation via preferences
+    Prefser prefser;
+    public static final String PASSWORD_KEY = "password";
+    public static final String EMAIL_KEY = "email";
+
+
     /**
      * Id to identity READ_CONTACTS permission request.
      */
     private static final int REQUEST_READ_CONTACTS = 0;
 
-    /**
-     * A dummy authentication store containing known user names and passwords.
-     * TODO: remove after connecting to a real authentication system.
-     */
-    private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "foo@example.com:hello", "bar@example.com:world"
-    };
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -117,9 +118,20 @@ public class LoginActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_login);
 
         initInstances();
+
+        fillCredentials();
+    }
+
+    private void fillCredentials(){
+        if (prefser.contains(PASSWORD_KEY) && prefser.contains(EMAIL_KEY)){
+            mEmailView.setText(prefser.get(EMAIL_KEY, String.class, ""));
+            mPasswordView.setText(prefser.get(PASSWORD_KEY, String.class, ""));
+        }
     }
 
     private void initInstances() {
+        prefser = new Prefser(this);
+
         // Set up the login form.
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
@@ -179,6 +191,8 @@ public class LoginActivity extends AppCompatActivity implements
                                     JSONObject object,
                                     GraphResponse response) {
                                 // Application code
+                                setResult(RESULT_OK);
+                                finish();
                             }
                         });
 
@@ -200,6 +214,12 @@ public class LoginActivity extends AppCompatActivity implements
         });
 
         this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        fillCredentials();
     }
 
     private void populateAutoComplete() {
@@ -393,25 +413,22 @@ public class LoginActivity extends AppCompatActivity implements
     public void onClick(View v) {
         String email = mEmailView.getText().toString();
 
-        switch (v.getId()) {
-            case R.id.g_sign_in_button:
-                onSignInClicked();
-                break;
-            case R.id.email_sign_in_button:
-                attemptLogin();
-                break;
-            case R.id.txt_create:
-                Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-                intent.putExtra(Constants.TAG_EMAIL, email);
-                startActivity(intent);
-                finish();
-                break;
-            case R.id.txt_forgot:
-                Intent intentForgot = new Intent(LoginActivity.this, ForgotPassActivity.class);
-                intentForgot.putExtra(Constants.TAG_EMAIL, email);
-                startActivity(intentForgot);
-                finish();
-                break;
+        int i = v.getId();
+        if (i == R.id.g_sign_in_button) {
+            onSignInClicked();
+
+        } else if (i == R.id.email_sign_in_button) {
+            attemptLogin();
+
+        } else if (i == R.id.txt_create) {
+            Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
+            intent.putExtra(Constants.TAG_EMAIL, email);
+            startActivity(intent);
+
+        } else if (i == R.id.txt_forgot) {
+            Intent intentForgot = new Intent(LoginActivity.this, ForgotPassActivity.class);
+            intentForgot.putExtra(Constants.TAG_EMAIL, email);
+            startActivity(intentForgot);
         }
     }
 
@@ -489,6 +506,9 @@ public class LoginActivity extends AppCompatActivity implements
             String birth = currentPerson.getBirthday();
             String email = Plus.AccountApi.getAccountName(mGoogleApiClient);
 
+            setResult(RESULT_OK);
+            finish();
+
             // by default the profile url gives 50x50 px image only
             // we can replace the value with whatever dimension we want by
             // replacing sz=X
@@ -500,7 +520,7 @@ public class LoginActivity extends AppCompatActivity implements
 
         } else {
             Toast.makeText(getApplicationContext(),
-                    "Person information is null", Toast.LENGTH_LONG).show();
+                    "Нет информации о профиле", Toast.LENGTH_LONG).show();
         }
     }
 
@@ -529,16 +549,21 @@ public class LoginActivity extends AppCompatActivity implements
                 return false;
             }
 
-            for (String credential : DUMMY_CREDENTIALS) {
+            /*for (String credential : DUMMY_CREDENTIALS) {
                 String[] pieces = credential.split(":");
                 if (pieces[0].equals(mEmail)) {
                     // Account exists, return true if the password matches.
                     return pieces[1].equals(mPassword);
                 }
+            }*/
+
+            if (prefser.contains(PASSWORD_KEY) && prefser.contains(EMAIL_KEY)){
+                return (prefser.get(PASSWORD_KEY, String.class, "")).equals(mPassword) &&
+                       (prefser.get(EMAIL_KEY, String.class, "")).equals(mEmail);
             }
 
             // TODO: register the new account here.
-            return true;
+            return false;
         }
 
         @Override
@@ -547,7 +572,8 @@ public class LoginActivity extends AppCompatActivity implements
             showProgress(false);
 
             if (success) {
-                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                //startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                setResult(RESULT_OK);
                 finish();
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));

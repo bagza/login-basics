@@ -71,7 +71,7 @@ public class ForgotPassActivity extends Activity implements View.OnClickListener
             edit_email.setError(getString(R.string.error_field_required));
             focusView = edit_email;
             cancel = true;
-        } else if (validate.isEmailValid(email)) {
+        } else if (!validate.isEmailValid(email)) {
             edit_email.setError(getString(R.string.error_invalid_email));
             focusView = edit_email;
             cancel = true;
@@ -92,14 +92,14 @@ public class ForgotPassActivity extends Activity implements View.OnClickListener
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_recover:
-                attemptRecover();
-                break;
-            case R.id.txt_remembered:
-                startActivity(new Intent(ForgotPassActivity.this, LoginActivity.class));
-                finish();
-                break;
+        int i = view.getId();
+        if (i == R.id.btn_recover) {
+            attemptRecover();
+
+        } else if (i == R.id.txt_remembered) {
+
+            finish();
+
         }
     }
 
@@ -144,11 +144,5 @@ public class ForgotPassActivity extends Activity implements View.OnClickListener
         protected void onCancelled() {
             mForgotTask = null;
         }
-    }
-
-    @Override
-    public void onBackPressed() {
-        startActivity(new Intent(ForgotPassActivity.this, LoginActivity.class));
-        finish();
     }
 }

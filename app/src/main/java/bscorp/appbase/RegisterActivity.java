@@ -12,6 +12,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.pwittchen.prefser.library.Prefser;
+
 import utils.CheckNetwork;
 import utils.Constants;
 import utils.ValidateUserInfo;
@@ -24,6 +26,7 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
     TextView txt_alreadyHave;
     Button btn_registrar;
     private CreateUserTask mCreateTask = null;
+    private Prefser prefser;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -47,6 +50,8 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
 
         btn_registrar = (Button) findViewById(R.id.btn_register);
         btn_registrar.setOnClickListener(this);
+
+        prefser = new Prefser(this);
 
         this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
@@ -76,13 +81,13 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
             edit_email.setError(getString(R.string.error_field_required));
             focusView = edit_email;
             cancel = true;
-        } else if (validate.isEmailValid(email)) {
+        } else if (!validate.isEmailValid(email)) {
             edit_email.setError(getString(R.string.error_invalid_email));
             focusView = edit_email;
             cancel = true;
         } else {
             // Check for a valid password, if the user entered one.
-            if (TextUtils.isEmpty(password) || validate.isPasswordValid(password)) {
+            if (!TextUtils.isEmpty(password) && !validate.isPasswordValid(password)) {
                 edit_password.setError(getString(R.string.error_invalid_password));
                 focusView = edit_password;
                 cancel = true;
@@ -104,14 +109,14 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
 
     @Override
     public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.btn_register:
-                attemptCreate();
-                break;
-            case R.id.txt_already_have:
-                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-                finish();
-                break;
+        int i = view.getId();
+        if (i == R.id.btn_register) {
+            attemptCreate();
+
+        } else if (i == R.id.txt_already_have) {
+            startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+            finish();
+
         }
     }
 
@@ -142,6 +147,9 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
             }
 
             // TODO: if there's no account registered, register the new account here.
+
+            prefser.put(LoginActivity.EMAIL_KEY, mEmail);
+            prefser.put(LoginActivity.PASSWORD_KEY, mPassword);
             return true;
         }
 
@@ -150,10 +158,11 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
             mCreateTask = null;
             CheckNetwork checkNetwork = new CheckNetwork();
             if (checkNetwork.isConnected(RegisterActivity.this) && success) {
-                Toast.makeText(RegisterActivity.this, "Account created", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RegisterActivity.this, "Аккаунт создан", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(RegisterActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+                Toast.makeText(RegisterActivity.this, "Ошибка соединения", Toast.LENGTH_SHORT).show();
             }
+            finish();
         }
 
         @Override
@@ -161,10 +170,10 @@ public class RegisterActivity extends Activity implements View.OnClickListener{
             mCreateTask = null;
         }
     }
-
+/*
     @Override
     public void onBackPressed() {
         startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
         finish();
-    }
+    }*/
 }
